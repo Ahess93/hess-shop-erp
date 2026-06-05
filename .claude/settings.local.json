@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git -C \"C:\\\\CLAUDE PROJECTS\\\\SHOP ERP\\\\SHOP ERP FILES\" status)",
+      "Bash(git -C \"C:\\\\CLAUDE PROJECTS\\\\SHOP ERP\\\\SHOP ERP FILES\" add .claude/ HANDOFF.md hess_shop_erp.html)",
+      "Bash(git -C 'C:\\\\CLAUDE PROJECTS\\\\SHOP ERP\\\\SHOP ERP FILES' commit -m ' *)",
+      "Bash(git config *)",
+      "Bash(git -C \"C:\\\\CLAUDE PROJECTS\\\\SHOP ERP\\\\SHOP ERP FILES\" add .)"
+    ]
+  }
+}
