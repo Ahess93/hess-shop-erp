@@ -1,0 +1,369 @@
+// Hess Solutions Shop ERP — Prisma Schema
+// Every table includes tenantId for multi-tenant isolation.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Enums ───────────────────────────────────────────────────────────────────
+
+enum Role {
+  SUPER_ADMIN
+  ADMIN
+  OPERATOR
+}
+
+enum AuthMode {
+  PASSWORD
+  PIN
+}
+
+enum Department {
+  QUOTING
+  QUOTE_ACCEPTED
+  ORDER_STOCK
+  STOCK_RECEIVED
+  ON_DECK
+  ON_MACHINE
+  FINISHING
+  QUALITY_CONTROL
+  SHIPPING
+  SHIPPED
+}
+
+enum Priority {
+  HIGH
+  NORMAL
+  LOW
+}
+
+enum QuoteStatus {
+  DRAFT
+  SENT
+  ACCEPTED
+  REJECTED
+}
+
+enum InvoiceStatus {
+  DRAFT
+  SENT
+  PAID
+  OVERDUE
+}
+
+enum FileKind {
+  BLUEPRINT
+  SETUP_PHOTO
+  JOB_PHOTO
+}
+
+enum TimeEntryType {
+  JOB
+  DAILY
+}
+
+// ─── Tenant (company) ────────────────────────────────────────────────────────
+
+model Tenant {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  themeConfig Json     @default("{}")
+  settings    Json     @default("{}")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  users          User[]
+  customers      Customer[]
+  jobs           Job[]
+  quotes         Quote[]
+  invoices       Invoice[]
+  inventoryItems InventoryItem[]
+  timeEntries    TimeEntry[]
+  notifications  Notification[]
+  auditLogs      AuditLog[]
+  systemSettings SystemSetting[]
+}
+
+// ─── User ────────────────────────────────────────────────────────────────────
+
+model User {
+  id           String    @id @default(cuid())
+  tenantId     String
+  name         String
+  email        String
+  passwordHash String?
+  pinHash      String?
+  role         Role
+  active       Boolean   @default(true)
+  lastLoginAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  tenant      Tenant           @relation(fields: [tenantId], references: [id])
+  timeEntries TimeEntry[]
+  auditLogs   AuditLog[]
+  uploads     FileAttachment[]
+
+  @@unique([tenantId, email])
+}
+
+// ─── Customer ────────────────────────────────────────────────────────────────
+
+model Customer {
+  id             String   @id @default(cuid())
+  tenantId       String
+  businessName   String
+  address        String?
+  email          String?
+  phone          String?
+  billingMethod  String?
+  shippingMethod String?
+  notes          String?
+  portalEnabled  Boolean  @default(false)
+  portalUserId   String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  tenant   Tenant    @relation(fields: [tenantId], references: [id])
+  jobs     Job[]
+  quotes   Quote[]
+  invoices Invoice[]
+}
+
+// ─── Job ─────────────────────────────────────────────────────────────────────
+
+model Job {
+  id          String     @id @default(cuid())
+  tenantId    String
+  jobNumber   String
+  customerId  String
+  partName    String
+  partNumber  String?
+  quantity    Int
+  dueDate     DateTime
+  createdDate DateTime   @default(now())
+  department  Department @default(QUOTING)
+  priority    Priority   @default(NORMAL)
+  progressPct Int        @default(0)
+  rfqNumber   String?
+  poNumber    String?
+  adminNotes  String?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  tenant      Tenant           @relation(fields: [tenantId], references: [id])
+  customer    Customer         @relation(fields: [customerId], references: [id])
+  traveler    Traveler?
+  attachments FileAttachment[]
+  timeEntries TimeEntry[]
+  quotes      Quote[]
+  invoices    Invoice[]
+
+  @@unique([tenantId, jobNumber])
+}
+
+// ─── Traveler ────────────────────────────────────────────────────────────────
+
+model Traveler {
+  id                        String    @id @default(cuid())
+  tenantId                  String
+  jobId                     String    @unique
+  runTimePerPiece           Decimal?
+  laborTime                 Decimal?
+  shippedDate               DateTime?
+  partsScrapped             Int       @default(0)
+  shippingMethod            String?
+  jobCost                   Decimal?
+  quotedMaterialCostPerPart Decimal?
+  actualMaterialCostPerPart Decimal?
+  materialCertRequired      Boolean   @default(false)
+  shopLocation              String?
+  operatorNotes             String?
+  createdAt                 DateTime  @default(now())
+  updatedAt                 DateTime  @updatedAt
+
+  job   Job            @relation(fields: [jobId], references: [id])
+  tools TravelerTool[]
+}
+
+model TravelerTool {
+  id          String   @id @default(cuid())
+  tenantId    String
+  travelerId  String
+  position    Int
+  description String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  traveler Traveler @relation(fields: [travelerId], references: [id])
+}
+
+// ─── File Attachments ────────────────────────────────────────────────────────
+
+model FileAttachment {
+  id          String   @id @default(cuid())
+  tenantId    String
+  jobId       String
+  kind        FileKind
+  fileName    String
+  storagePath String
+  mimeType    String
+  sizeBytes   Int
+  uploadedBy  String
+  createdAt   DateTime @default(now())
+
+  job            Job  @relation(fields: [jobId], references: [id])
+  uploadedByUser User @relation(fields: [uploadedBy], references: [id])
+}
+
+// ─── Quote ───────────────────────────────────────────────────────────────────
+
+model Quote {
+  id              String      @id @default(cuid())
+  tenantId        String
+  customerId      String
+  jobId           String?
+  laborRate       Decimal
+  estRunTime      Decimal
+  materialCost    Decimal
+  markupPct       Decimal
+  calculatedPrice Decimal
+  status          QuoteStatus @default(DRAFT)
+  pdfPath         String?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  tenant   Tenant   @relation(fields: [tenantId], references: [id])
+  customer Customer @relation(fields: [customerId], references: [id])
+  job      Job?     @relation(fields: [jobId], references: [id])
+}
+
+// ─── Invoice ─────────────────────────────────────────────────────────────────
+
+model Invoice {
+  id            String        @id @default(cuid())
+  tenantId      String
+  customerId    String
+  jobId         String?
+  invoiceNumber String
+  lineItems     Json
+  subtotal      Decimal
+  tax           Decimal
+  total         Decimal
+  status        InvoiceStatus @default(DRAFT)
+  pdfPath       String?
+  dueDate       DateTime?
+  paidDate      DateTime?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  tenant   Tenant   @relation(fields: [tenantId], references: [id])
+  customer Customer @relation(fields: [customerId], references: [id])
+  job      Job?     @relation(fields: [jobId], references: [id])
+
+  @@unique([tenantId, invoiceNumber])
+}
+
+// ─── Inventory ───────────────────────────────────────────────────────────────
+
+model InventoryItem {
+  id           String   @id @default(cuid())
+  tenantId     String
+  sku          String
+  name         String
+  category     String?
+  quantity     Decimal  @default(0)
+  unit         String   @default("ea")
+  reorderPoint Decimal  @default(0)
+  unitCost     Decimal  @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  tenant    Tenant          @relation(fields: [tenantId], references: [id])
+  movements StockMovement[]
+
+  @@unique([tenantId, sku])
+}
+
+model StockMovement {
+  id        String   @id @default(cuid())
+  tenantId  String
+  itemId    String
+  delta     Decimal
+  reason    String
+  userId    String
+  createdAt DateTime @default(now())
+
+  item InventoryItem @relation(fields: [itemId], references: [id])
+}
+
+// ─── Time Tracking ───────────────────────────────────────────────────────────
+
+model TimeEntry {
+  id              String        @id @default(cuid())
+  tenantId        String
+  userId          String
+  jobId           String?
+  type            TimeEntryType
+  clockIn         DateTime
+  clockOut        DateTime?
+  durationMinutes Int?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  user   User   @relation(fields: [userId], references: [id])
+  job    Job?   @relation(fields: [jobId], references: [id])
+}
+
+// ─── Notifications ───────────────────────────────────────────────────────────
+
+model Notification {
+  id           String    @id @default(cuid())
+  tenantId     String
+  type         String
+  message      String
+  targetUserId String?
+  read         Boolean   @default(false)
+  emailedAt    DateTime?
+  createdAt    DateTime  @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+}
+
+// ─── Audit Log (append-only) ─────────────────────────────────────────────────
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  tenantId   String
+  userId     String
+  action     String
+  entityType String
+  entityId   String
+  oldValue   Json?
+  newValue   Json?
+  ip         String?
+  createdAt  DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  user   User   @relation(fields: [userId], references: [id])
+}
+
+// ─── System Settings ─────────────────────────────────────────────────────────
+
+model SystemSetting {
+  id       String @id @default(cuid())
+  tenantId String
+  key      String
+  value    Json
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@unique([tenantId, key])
+}
