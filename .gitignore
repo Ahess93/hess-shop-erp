@@ -14,6 +14,10 @@ node_modules/
 dist/
 build/
 
+# Uploaded files — stored on disk, never committed
+uploads/*
+!uploads/.gitkeep
+
 # Logs
 *.log
 npm-debug.log*

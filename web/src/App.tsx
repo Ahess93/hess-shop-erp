@@ -10,6 +10,7 @@ import { LoginPage } from './pages/auth/LoginPage';
 import { UsersPage } from './pages/users/UsersPage';
 import { SettingsPage } from './pages/settings/SettingsPage';
 import { JobBoardPage } from './pages/jobs/JobBoardPage';
+import { TravelerPage } from './pages/traveler/TravelerPage';
 import { Spinner } from './components/ui/Spinner';
 
 const queryClient = new QueryClient({
@@ -59,6 +60,7 @@ function AppRoutes() {
       >
         <Route index element={<Navigate to="/jobs" replace />} />
         <Route path="jobs" element={<JobBoardPage />} />
+        <Route path="jobs/:jobId/traveler" element={<TravelerPage />} />
         <Route
           path="users"
           element={
