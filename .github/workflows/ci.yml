@@ -54,11 +54,11 @@ jobs:
         run: npm run typecheck
 
       - name: Generate Prisma client
-        run: npx prisma generate
+        run: node_modules/.bin/prisma generate
         working-directory: server
 
       - name: Run database migrations
-        run: npx prisma migrate deploy
+        run: node_modules/.bin/prisma migrate deploy
         working-directory: server
 
       - name: Test (all packages)
