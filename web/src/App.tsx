@@ -14,6 +14,8 @@ import { TravelerPage } from './pages/traveler/TravelerPage';
 import { QuotesPage } from './pages/quotes/QuotesPage';
 import { InventoryPage } from './pages/inventory/InventoryPage';
 import { TimePage } from './pages/time/TimePage';
+import { InvoicesPage } from './pages/invoices/InvoicesPage';
+import { ReportsPage } from './pages/reports/ReportsPage';
 import { Spinner } from './components/ui/Spinner';
 
 const queryClient = new QueryClient({
@@ -70,6 +72,22 @@ function AppRoutes() {
           element={
             <ProtectedRoute requiredRoles={['SUPER_ADMIN', 'ADMIN']}>
               <QuotesPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="invoices"
+          element={
+            <ProtectedRoute requiredRoles={['SUPER_ADMIN', 'ADMIN']}>
+              <InvoicesPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="reports"
+          element={
+            <ProtectedRoute requiredRoles={['SUPER_ADMIN', 'ADMIN']}>
+              <ReportsPage />
             </ProtectedRoute>
           }
         />
