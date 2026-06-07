@@ -1,0 +1,67 @@
+@import 'tailwindcss';
+
+/* ── Hess Solutions brand tokens ───────────────────────────────────────────── */
+:root {
+  --gold: #d4a017;
+  --gold-dark: #b8860b;
+  --gold-light: #f0c040;
+  --bg: #1a1a1a;
+  --surface: #242424;
+  --surface-2: #2e2e2e;
+  --surface-3: #383838;
+  --border: #3a3a3a;
+  --text: #f0f0f0;
+  --text-muted: #888888;
+  --text-dim: #555555;
+  --danger: #e53e3e;
+  --danger-dark: #c53030;
+  --success: #38a169;
+  --warning: #d69e2e;
+  --info: #3182ce;
+  --radius: 6px;
+  --shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.6);
+}
+
+/* ── Base reset ─────────────────────────────────────────────────────────────── */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family:
+    'Inter',
+    system-ui,
+    -apple-system,
+    sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Scrollbar ──────────────────────────────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--surface);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-dim);
+}
