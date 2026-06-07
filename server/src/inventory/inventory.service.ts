@@ -153,7 +153,7 @@ export class InventoryService {
       action: 'inventory:update',
       entityType: 'InventoryItem',
       entityId: id,
-      oldValue: { name: existing.name } as Record<string, unknown>,
+      oldValue: { name: existing.name },
       newValue: dto as Record<string, unknown>,
     });
 
@@ -174,10 +174,7 @@ export class InventoryService {
       action: 'inventory:delete',
       entityType: 'InventoryItem',
       entityId: id,
-      oldValue: { sku: existing.sku, quantity: existing.quantity } as Record<
-        string,
-        unknown
-      >,
+      oldValue: { sku: existing.sku, quantity: existing.quantity },
     });
   }
 

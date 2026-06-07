@@ -7,12 +7,13 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import type { SessionUser } from '../auth/auth.service';
+import { Role } from '../permissions/permissions.types';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as os from 'os';
 import { exec } from 'child_process';
 import { promisify } from 'util';
-// eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 const archiver = require('archiver') as (
   format: string,
   options?: object,
@@ -84,10 +85,15 @@ export class BackupService {
     const current = await this.getConfig(tenantId);
     const merged: BackupConfig = { ...current, ...config };
 
+    // Prisma's InputJsonValue doesn't accept typed interfaces; cast through unknown
+
+    const mergedJson: any = merged;
     await this.prisma.systemSetting.upsert({
       where: { tenantId_key: { tenantId, key: 'backup' } },
-      create: { tenantId, key: 'backup', value: merged as unknown as object },
-      update: { value: merged as unknown as object },
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+      create: { tenantId, key: 'backup', value: mergedJson },
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+      update: { value: mergedJson },
     });
 
     await this.audit.log({
@@ -211,11 +217,8 @@ export class BackupService {
       action: 'CREATE',
       entityType: 'Backup',
       entityId: filename,
-      oldValue: null,
-      newValue: { filename, sizeBytes: result.sizeBytes } as Record<
-        string,
-        unknown
-      >,
+      oldValue: undefined,
+      newValue: { filename, sizeBytes: result.sizeBytes },
     });
 
     this.logger.log(
@@ -236,7 +239,8 @@ export class BackupService {
     const systemActor: SessionUser = {
       id: 'system',
       tenantId,
-      role: 'SUPER_ADMIN',
+      name: 'System',
+      role: Role.SUPER_ADMIN,
       email: 'system@internal',
     };
     return this.createBackup(tenantId, systemActor, uploadsDir);

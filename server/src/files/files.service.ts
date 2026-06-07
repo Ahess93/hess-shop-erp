@@ -144,7 +144,7 @@ export class FilesService {
       action: 'file:delete',
       entityType: 'FileAttachment',
       entityId: fileId,
-      oldValue: { fileName: attachment.fileName } as Record<string, unknown>,
+      oldValue: { fileName: attachment.fileName },
     });
   }
 }

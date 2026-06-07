@@ -148,6 +148,23 @@ export class AuthService {
   }
 
   /**
+   * Retrieve a session user by ID — used after 2FA verification to rebuild session.
+   */
+  async getUserById(tenantId: string, userId: string): Promise<SessionUser> {
+    const user = await this.prisma.user.findFirst({
+      where: { id: userId, tenantId, active: true },
+    });
+    if (!user) throw new UnauthorizedException('User not found');
+    return {
+      id: user.id,
+      tenantId: user.tenantId,
+      name: user.name,
+      email: user.email,
+      role: user.role as Role,
+    };
+  }
+
+  /**
    * Create the initial Super Admin during first-run setup.
    * Fails if any user already exists for the tenant.
    */

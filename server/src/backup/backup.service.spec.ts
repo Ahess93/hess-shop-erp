@@ -4,6 +4,7 @@ import { BackupService } from './backup.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import type { SessionUser } from '../auth/auth.service';
+import { Role } from '../permissions/permissions.types';
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
@@ -14,7 +15,7 @@ const TENANT = 'tenant-1';
 const ACTOR: SessionUser = {
   id: 'user-1',
   tenantId: TENANT,
-  role: 'SUPER_ADMIN',
+  role: Role.SUPER_ADMIN,
   email: 'admin@example.com',
 };
 

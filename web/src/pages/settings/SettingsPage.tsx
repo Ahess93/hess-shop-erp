@@ -2,8 +2,10 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { backupApi, formatBytes } from '../../api/backup';
 import type { BackupConfig } from '../../api/backup';
+import { twoFaApi } from '../../api/twofa';
+import { useAuthStore } from '../../store/auth';
 
-type SettingsTab = 'auth' | 'smtp' | 'backup' | 'theme';
+type SettingsTab = 'auth' | 'smtp' | 'backup' | 'theme' | 'security';
 
 export function SettingsPage() {
   const [tab, setTab] = useState<SettingsTab>('backup');
@@ -12,6 +14,7 @@ export function SettingsPage() {
     { key: 'auth', label: 'Auth Mode', icon: '🔐' },
     { key: 'smtp', label: 'Email / SMTP', icon: '✉️' },
     { key: 'backup', label: 'Backups', icon: '💾' },
+    { key: 'security', label: 'Security & 2FA', icon: '🛡️' },
     { key: 'theme', label: 'Theme', icon: '🎨' },
   ];
 
@@ -45,6 +48,7 @@ export function SettingsPage() {
       {tab === 'auth' && <AuthTab />}
       {tab === 'smtp' && <SmtpTab />}
       {tab === 'backup' && <BackupTab />}
+      {tab === 'security' && <SecurityTab />}
       {tab === 'theme' && <ThemeTab />}
     </div>
   );
@@ -410,6 +414,293 @@ function ThemeTab() {
         <p className="text-xs text-[var(--text-muted)] mt-4">
           Full theme customization (logo, color tokens, company name) coming in a future update.
         </p>
+      </Card>
+    </section>
+  );
+}
+
+// ─── Security & 2FA Tab ──────────────────────────────────────────────────────
+
+function SecurityTab() {
+  const { user } = useAuthStore();
+  const qc = useQueryClient();
+  const userId = user?.id ?? '';
+
+  const [step, setStep] = useState<'idle' | 'setup' | 'verify' | 'done'>('idle');
+  const [qrUri, setQrUri] = useState('');
+  const [secret, setSecret] = useState('');
+  const [codeInput, setCodeInput] = useState('');
+  const [disableCode, setDisableCode] = useState('');
+  const [msg, setMsg] = useState<string | null>(null);
+
+  const { data: status, isLoading } = useQuery({
+    queryKey: ['2fa', 'status', userId],
+    queryFn: () => twoFaApi.getStatus(userId),
+    enabled: !!userId,
+  });
+
+  const setupMut = useMutation({
+    mutationFn: () => twoFaApi.setup(userId),
+    onSuccess: (data) => {
+      setQrUri(data.qrDataUri);
+      setSecret(data.secret);
+      setStep('setup');
+    },
+  });
+
+  const verifyMut = useMutation({
+    mutationFn: () => twoFaApi.verify(userId, codeInput),
+    onSuccess: () => {
+      setStep('done');
+      setMsg('✅ 2FA enabled! You will be asked for a code on future logins.');
+      void qc.invalidateQueries({ queryKey: ['2fa', 'status'] });
+    },
+    onError: (err: Error) => setMsg(`❌ ${err.message}`),
+  });
+
+  const disableMut = useMutation({
+    mutationFn: () => twoFaApi.disable(userId, disableCode || undefined),
+    onSuccess: () => {
+      setMsg('2FA has been disabled.');
+      setStep('idle');
+      setDisableCode('');
+      void qc.invalidateQueries({ queryKey: ['2fa', 'status'] });
+    },
+    onError: (err: Error) => setMsg(`❌ ${err.message}`),
+  });
+
+  if (isLoading) return <Spinner />;
+
+  return (
+    <section className="space-y-4">
+      {/* 2FA card */}
+      <Card
+        title="Two-Factor Authentication (2FA)"
+        description="Add a second layer of security using an authenticator app like Google Authenticator or Authy."
+      >
+        {status?.enabled ? (
+          // 2FA is on — show disable option
+          <div className="mt-4 space-y-3">
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-emerald-400" />
+              <span className="text-sm font-medium text-emerald-400">
+                2FA is active on your account
+              </span>
+            </div>
+            <div>
+              <label className="block text-xs text-[var(--text-muted)] mb-1">
+                Enter your 6-digit code to disable 2FA
+              </label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={6}
+                  value={disableCode}
+                  onChange={(e) => setDisableCode(e.target.value.replace(/\D/g, ''))}
+                  placeholder="000000"
+                  className="w-32 bg-[var(--surface-2)] border border-[var(--border)] rounded-md px-3 py-2 text-sm text-[var(--text)] font-mono text-center focus:outline-none focus:border-[var(--gold)]"
+                />
+                <button
+                  onClick={() => disableMut.mutate()}
+                  disabled={disableMut.isPending}
+                  className="px-4 py-2 rounded-md bg-[var(--danger)]/80 text-white text-sm font-semibold disabled:opacity-60 hover:opacity-90 transition-opacity"
+                >
+                  {disableMut.isPending ? 'Disabling…' : 'Disable 2FA'}
+                </button>
+              </div>
+            </div>
+            {msg && <p className="text-sm text-[var(--text-muted)]">{msg}</p>}
+          </div>
+        ) : step === 'idle' ? (
+          // 2FA is off — offer to enable
+          <div className="mt-4">
+            <p className="text-sm text-[var(--text-muted)] mb-3">
+              2FA is not enabled. We recommend enabling it if this server is accessible from outside
+              your shop network.
+            </p>
+            <button
+              onClick={() => {
+                setMsg(null);
+                setupMut.mutate();
+              }}
+              disabled={setupMut.isPending}
+              className="px-4 py-2 rounded-md bg-[var(--gold)] text-black text-sm font-semibold disabled:opacity-60 hover:opacity-90 transition-opacity"
+            >
+              {setupMut.isPending ? 'Generating…' : '🛡️ Set Up 2FA'}
+            </button>
+          </div>
+        ) : step === 'setup' ? (
+          // Show QR code + manual entry key
+          <div className="mt-4 space-y-4">
+            <p className="text-sm text-[var(--text-muted)]">
+              Scan this QR code with your authenticator app, then enter the 6-digit code below to
+              confirm.
+            </p>
+            {qrUri && (
+              <img
+                src={qrUri}
+                alt="2FA QR code"
+                className="w-48 h-48 rounded-lg border border-[var(--border)]"
+              />
+            )}
+            <div>
+              <p className="text-xs text-[var(--text-muted)] mb-1">
+                Can&apos;t scan? Enter this key manually:
+              </p>
+              <code className="text-xs bg-[var(--surface-2)] px-2 py-1 rounded font-mono text-[var(--gold)] select-all">
+                {secret}
+              </code>
+            </div>
+            <div>
+              <label className="block text-xs text-[var(--text-muted)] mb-1">
+                Enter the 6-digit code from your app
+              </label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={6}
+                  value={codeInput}
+                  onChange={(e) => setCodeInput(e.target.value.replace(/\D/g, ''))}
+                  placeholder="000000"
+                  className="w-32 bg-[var(--surface-2)] border border-[var(--border)] rounded-md px-3 py-2 text-sm text-[var(--text)] font-mono text-center focus:outline-none focus:border-[var(--gold)]"
+                />
+                <button
+                  onClick={() => verifyMut.mutate()}
+                  disabled={verifyMut.isPending || codeInput.length !== 6}
+                  className="px-4 py-2 rounded-md bg-[var(--gold)] text-black text-sm font-semibold disabled:opacity-60 hover:opacity-90 transition-opacity"
+                >
+                  {verifyMut.isPending ? 'Verifying…' : 'Activate 2FA'}
+                </button>
+              </div>
+              {msg && <p className="text-sm text-[var(--text-muted)] mt-2">{msg}</p>}
+            </div>
+          </div>
+        ) : (
+          // Done
+          <div className="mt-4">
+            <p className="text-sm text-emerald-400">{msg}</p>
+          </div>
+        )}
+      </Card>
+
+      {/* Remote access guide */}
+      <Card
+        title="Remote Access (Outside the Shop)"
+        description="Securely reach your Shop ERP from home or your phone without opening firewall ports."
+      >
+        <div className="mt-4 space-y-4">
+          {/* Option A: Cloudflare Tunnel */}
+          <div className="rounded-lg border border-[var(--border)] p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-lg">☁️</span>
+              <h3 className="font-semibold text-[var(--text)]">
+                Option A — Cloudflare Tunnel (Recommended for Beginners)
+              </h3>
+            </div>
+            <p className="text-sm text-[var(--text-muted)] mb-3">
+              Free, no open ports, automatic HTTPS. Cloudflare provides a secure tunnel from their
+              network to your machine.
+            </p>
+            <ol className="text-sm text-[var(--text-muted)] space-y-1 list-decimal list-inside">
+              <li>
+                Create a free account at{' '}
+                <strong className="text-[var(--text)]">cloudflare.com</strong>
+              </li>
+              <li>
+                Download <strong className="text-[var(--text)]">cloudflared</strong> from{' '}
+                <code className="bg-[var(--surface)] px-1 rounded text-xs">
+                  developers.cloudflare.com/cloudflare-one/connections/connect-networks
+                </code>
+              </li>
+              <li>
+                Run:{' '}
+                <code className="bg-[var(--surface)] px-1 rounded text-xs">
+                  cloudflared tunnel --url http://localhost:3001
+                </code>
+              </li>
+              <li>
+                Cloudflare gives you a URL like{' '}
+                <code className="bg-[var(--surface)] px-1 rounded text-xs">
+                  https://abc123.trycloudflare.com
+                </code>
+                — bookmark it
+              </li>
+              <li>
+                Set <code className="bg-[var(--surface)] px-1 rounded text-xs">TRUST_PROXY=1</code>{' '}
+                and{' '}
+                <code className="bg-[var(--surface)] px-1 rounded text-xs">REMOTE_ACCESS=true</code>{' '}
+                in your server .env
+              </li>
+            </ol>
+          </div>
+
+          {/* Option B: Tailscale */}
+          <div className="rounded-lg border border-[var(--border)] p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-lg">🔒</span>
+              <h3 className="font-semibold text-[var(--text)]">
+                Option B — Tailscale (Best for Team Access)
+              </h3>
+            </div>
+            <p className="text-sm text-[var(--text-muted)] mb-3">
+              Free for up to 3 users. Creates a private encrypted network between devices — no DNS
+              or firewall config needed.
+            </p>
+            <ol className="text-sm text-[var(--text-muted)] space-y-1 list-decimal list-inside">
+              <li>
+                Sign up at <strong className="text-[var(--text)]">tailscale.com</strong> (free tier
+                covers most shops)
+              </li>
+              <li>Install Tailscale on the shop PC and on your phone/laptop</li>
+              <li>
+                Find the shop PC&apos;s Tailscale IP (e.g.{' '}
+                <code className="bg-[var(--surface)] px-1 rounded text-xs">100.x.x.x</code>)
+              </li>
+              <li>
+                Access the ERP at{' '}
+                <code className="bg-[var(--surface)] px-1 rounded text-xs">
+                  http://100.x.x.x:3001
+                </code>{' '}
+                from any Tailscale device
+              </li>
+            </ol>
+          </div>
+
+          {/* Security checklist */}
+          <div className="rounded-lg bg-amber-500/10 border border-amber-500/30 p-4">
+            <h3 className="font-semibold text-amber-400 mb-2">
+              ⚠️ Security Checklist Before Going Remote
+            </h3>
+            <ul className="text-sm text-[var(--text-muted)] space-y-1">
+              <li className="flex items-start gap-2">
+                <span className="text-amber-400 mt-0.5">•</span>
+                Enable 2FA (above) for all Admin and Super Admin accounts
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-amber-400 mt-0.5">•</span>
+                Use strong passwords (12+ characters) for all accounts
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-amber-400 mt-0.5">•</span>
+                Set{' '}
+                <code className="bg-[var(--surface)] px-1 rounded text-xs">
+                  REMOTE_ACCESS=true
+                </code>{' '}
+                in server .env to enable strict CSP and secure cookies
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-amber-400 mt-0.5">•</span>
+                Back up your database before exposing to the internet
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-amber-400 mt-0.5">•</span>
+                Keep Windows and the app updated
+              </li>
+            </ul>
+          </div>
+        </div>
       </Card>
     </section>
   );

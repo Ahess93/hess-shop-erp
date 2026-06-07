@@ -177,7 +177,7 @@ export class JobsService {
       oldValue: {
         department: existing.department,
         priority: existing.priority,
-      } as Record<string, unknown>,
+      },
       newValue: dto as Record<string, unknown>,
     });
 
@@ -198,7 +198,7 @@ export class JobsService {
       action: 'job:delete',
       entityType: 'Job',
       entityId: id,
-      oldValue: { jobNumber: existing.jobNumber } as Record<string, unknown>,
+      oldValue: { jobNumber: existing.jobNumber },
     });
   }
 }

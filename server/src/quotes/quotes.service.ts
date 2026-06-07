@@ -177,7 +177,7 @@ export class QuotesService {
 
     const updated = await this.prisma.quote.update({
       where: { id },
-      data,
+      data: data as Parameters<typeof this.prisma.quote.update>[0]['data'],
       select: QUOTE_SELECT,
     });
 
@@ -187,7 +187,7 @@ export class QuotesService {
       action: 'quote:update',
       entityType: 'Quote',
       entityId: id,
-      oldValue: { status: existing.status } as Record<string, unknown>,
+      oldValue: { status: existing.status },
       newValue: dto as Record<string, unknown>,
     });
 
@@ -208,7 +208,7 @@ export class QuotesService {
       action: 'quote:delete',
       entityType: 'Quote',
       entityId: id,
-      oldValue: { status: existing.status } as Record<string, unknown>,
+      oldValue: { status: existing.status },
     });
   }
 
