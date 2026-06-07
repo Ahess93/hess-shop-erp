@@ -8,6 +8,8 @@ import { SetupModule } from './setup/setup.module';
 import { UsersModule } from './users/users.module';
 import { JobsModule } from './jobs/jobs.module';
 import { CustomersModule } from './customers/customers.module';
+import { TravelerModule } from './traveler/traveler.module';
+import { FilesModule } from './files/files.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 
@@ -23,6 +25,8 @@ import { AppService } from './app.service';
     UsersModule,
     JobsModule,
     CustomersModule,
+    TravelerModule,
+    FilesModule,
   ],
   controllers: [AppController],
   providers: [AppService],

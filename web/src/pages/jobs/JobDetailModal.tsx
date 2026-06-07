@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { jobsApi, DEPARTMENT_LABELS, DEPARTMENTS } from '../../api/jobs';
 import type { Job } from '../../api/jobs';
@@ -13,6 +14,7 @@ interface JobDetailModalProps {
 
 export function JobDetailModal({ job, onClose }: JobDetailModalProps) {
   const { user } = useAuthStore();
+  const navigate = useNavigate();
   const qc = useQueryClient();
   const [confirmDelete, setConfirmDelete] = useState(false);
 
@@ -125,6 +127,18 @@ export function JobDetailModal({ job, onClose }: JobDetailModalProps) {
               </p>
             </div>
           )}
+
+          {/* Traveler link */}
+          <Button
+            variant="secondary"
+            className="w-full"
+            onClick={() => {
+              onClose();
+              void navigate(`/jobs/${job.id}/traveler`);
+            }}
+          >
+            📋 Open Job Traveler
+          </Button>
 
           {/* Actions */}
           {canEdit && (
