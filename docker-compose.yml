@@ -1,0 +1,23 @@
+version: '3.9'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: hess-erp-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: hess_erp
+      POSTGRES_PASSWORD: hess_erp_dev
+      POSTGRES_DB: hess_erp_dev
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U hess_erp -d hess_erp_dev']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:

@@ -9,6 +9,7 @@
 ## 0. How to read this document
 
 This is a phased, multi-agent build plan. Each phase has:
+
 - **Goal** — what "done" means
 - **Tasks** — discrete units of work
 - **Quality gate** — what must pass before the phase merges and the next begins
@@ -24,35 +25,36 @@ This is a phased, multi-agent build plan. Each phase has:
 
 A machine-shop ERP that runs as a **self-contained Windows application** for Hess Solutions today, architected from day one to become a **multi-tenant SaaS** sold to other shops later.
 
-**Guiding principle for every decision:** *"Would this choice make it harder to sell seats to another company later?"* If yes, reconsider. We build single-tenant-deployed but multi-tenant-aware.
+**Guiding principle for every decision:** _"Would this choice make it harder to sell seats to another company later?"_ If yes, reconsider. We build single-tenant-deployed but multi-tenant-aware.
 
 ### What it replaces
+
 Job tracking, inventory management, customer records, quoting, invoicing, time tracking, and shop-floor job travelers — currently spread across paper, spreadsheets, and memory.
 
 ---
 
 ## 2. Confirmed requirements (from owner interview)
 
-| Area | Decision |
-|---|---|
-| **Deployment** | Installable Windows `.exe`. Short setup wizard (2–3 screens): choose install folder, set Super Admin account, set port/data location. |
-| **Server model** | Runs a local server on a Windows machine; users on the shop LAN reach it via browser. Remote access is a **later** phase. |
-| **Users (initial)** | 1–5 users at Hess. |
-| **SaaS model (future)** | **Each company gets their own isolated install + database.** (Single-tenant deployment, repeated per customer.) |
-| **File storage** | Real file uploads required — blueprints (PDF), setup pictures, job pictures (images). Must store and retrieve actual files. |
-| **Roles** | **Super Admin** (controls user access + everything, including system settings), **Admin**, **Operator**. Super Admin is above Admin. |
-| **Auth method** | **Super Admin chooses** the operator login style — full email/password OR quick PIN/select login for the shop floor. Build both; make it a system setting. |
-| **Notifications** | Email alerts for overdue jobs, low stock, etc. |
-| **Quoting** | Full quoting workflow: labor rate × run time + material cost + markup → quoted price. Generates a **PDF quote**. **Visible to Admin and above only.** |
-| **Time tracking** | Per-job time tracking **and** a daily clock in/out for each operator. |
-| **Modules in v1** | Everything: jobs, inventory, customers, traveler, quoting, **invoicing (build our own, no QuickBooks/Xero integration)**, and **reporting** (revenue per customer, job profitability, on-time %). |
-| **Backups** | Super Admin configurable — local folder, external drive/NAS, and cloud (OneDrive/Google Drive/Dropbox) options. |
-| **Customer portal** | Not in v1. **Design the database schema to support it later** (don't build the UI). |
-| **Mobile/tablet** | Single responsive build that works on shop-floor tablets and office desktops. |
-| **Audit trail** | **Full detailed audit log** — who changed what, when, old value vs new value. |
-| **White-labeling** | **Build from day one.** Logo + theme colors swappable per deployment. Hess gold/black is the default theme. |
-| **Quality gates** | **Strict.** Full automated test coverage + CI/CD. Nothing merges without passing. |
-| **Owner skill level** | Total beginner. Claude Code sets up everything; owner follows numbered steps. |
+| Area                    | Decision                                                                                                                                                                                          |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Deployment**          | Installable Windows `.exe`. Short setup wizard (2–3 screens): choose install folder, set Super Admin account, set port/data location.                                                             |
+| **Server model**        | Runs a local server on a Windows machine; users on the shop LAN reach it via browser. Remote access is a **later** phase.                                                                         |
+| **Users (initial)**     | 1–5 users at Hess.                                                                                                                                                                                |
+| **SaaS model (future)** | **Each company gets their own isolated install + database.** (Single-tenant deployment, repeated per customer.)                                                                                   |
+| **File storage**        | Real file uploads required — blueprints (PDF), setup pictures, job pictures (images). Must store and retrieve actual files.                                                                       |
+| **Roles**               | **Super Admin** (controls user access + everything, including system settings), **Admin**, **Operator**. Super Admin is above Admin.                                                              |
+| **Auth method**         | **Super Admin chooses** the operator login style — full email/password OR quick PIN/select login for the shop floor. Build both; make it a system setting.                                        |
+| **Notifications**       | Email alerts for overdue jobs, low stock, etc.                                                                                                                                                    |
+| **Quoting**             | Full quoting workflow: labor rate × run time + material cost + markup → quoted price. Generates a **PDF quote**. **Visible to Admin and above only.**                                             |
+| **Time tracking**       | Per-job time tracking **and** a daily clock in/out for each operator.                                                                                                                             |
+| **Modules in v1**       | Everything: jobs, inventory, customers, traveler, quoting, **invoicing (build our own, no QuickBooks/Xero integration)**, and **reporting** (revenue per customer, job profitability, on-time %). |
+| **Backups**             | Super Admin configurable — local folder, external drive/NAS, and cloud (OneDrive/Google Drive/Dropbox) options.                                                                                   |
+| **Customer portal**     | Not in v1. **Design the database schema to support it later** (don't build the UI).                                                                                                               |
+| **Mobile/tablet**       | Single responsive build that works on shop-floor tablets and office desktops.                                                                                                                     |
+| **Audit trail**         | **Full detailed audit log** — who changed what, when, old value vs new value.                                                                                                                     |
+| **White-labeling**      | **Build from day one.** Logo + theme colors swappable per deployment. Hess gold/black is the default theme.                                                                                       |
+| **Quality gates**       | **Strict.** Full automated test coverage + CI/CD. Nothing merges without passing.                                                                                                                 |
+| **Owner skill level**   | Total beginner. Claude Code sets up everything; owner follows numbered steps.                                                                                                                     |
 
 ---
 
@@ -62,25 +64,26 @@ These choices optimize for: (a) packaging as a Windows `.exe`, (b) one responsiv
 
 ### 3.1 Core stack
 
-| Layer | Choice | Why |
-|---|---|---|
-| **App shell / packaging** | **Electron** (wraps the web app + Node server into one Windows `.exe`) | Produces a true double-click installer via Electron Forge / electron-builder. Bundles Node, the server, and the database engine so the owner installs nothing else. |
-| **Backend runtime** | **Node.js (LTS)** + **TypeScript** | One language across front and back. TypeScript catches errors before runtime — important for a strict-quality build. |
-| **API framework** | **Fastify** (or NestJS if we want more structure) | Fast, well-typed, great validation story. NestJS is worth considering because its module/guard system maps cleanly onto our role-based access control and future multi-tenancy. **Recommendation: NestJS** for the structure it enforces on a large, long-lived app. |
-| **Database** | **PostgreSQL** (bundled portable build for the local `.exe`; managed instance for SaaS) | The owner asked about SQL "or something better." Postgres is the right answer: rock-solid, handles JSON for flexible fields, scales to SaaS unchanged, strong audit/row-level-security features we'll use for multi-tenancy. We bundle a portable Postgres with the installer so the owner needs zero DB setup. *(Alternative for ultra-simple single-file: SQLite. We are NOT using it as the primary because moving from SQLite to Postgres later is exactly the kind of rework we're trying to avoid. Build on Postgres now.)* |
-| **ORM / DB layer** | **Prisma** | Type-safe queries, automatic migrations, readable schema file. Migrations are auditable and reversible — feeds our quality gates. |
-| **Frontend** | **React + TypeScript + Vite** | Component reuse, huge ecosystem, easy responsive design. Vite is fast and simple. |
-| **Styling** | **Tailwind CSS** + CSS variables for theming | The white-label theme tokens become CSS variables driven by a per-deployment theme config. Matches how the prototype already themes with `--gold`, `--darkbg`, etc. |
-| **Auth** | **Lucia** or **Auth.js**, session-based, with **argon2** password hashing and a separate PIN flow | Session cookies (not long-lived JWTs) are safer for a browser app on a LAN. PIN login is a second credential type on the same user. |
-| **File storage** | **Local filesystem** (in the app data dir) behind an abstraction layer, with an **S3-compatible adapter** ready for SaaS | The abstraction means local-disk now, cloud object storage later, no code rewrite. |
-| **PDF generation** | **Playwright** (render an HTML template to PDF) or **pdf-lib** | Quotes and invoices render as branded PDFs. Playwright gives pixel-perfect HTML-to-PDF using the same theme. |
-| **Email** | **Nodemailer**, SMTP configured by Super Admin | Owner sets their email provider in settings. Works with Gmail/Office365/etc. |
-| **Background jobs** | **node-cron** (in-process) for v1; **BullMQ + Redis** if volume grows | Overdue-job checks, nightly backups, low-stock scans run on a schedule. |
-| **Testing** | **Vitest** (unit), **Supertest** (API), **Playwright** (end-to-end) | Covers the strict-gate requirement across all layers. |
-| **CI/CD** | **GitHub Actions** | Runs lint + typecheck + tests + build on every PR. Blocks merge on failure. |
+| Layer                     | Choice                                                                                                                   | Why                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **App shell / packaging** | **Electron** (wraps the web app + Node server into one Windows `.exe`)                                                   | Produces a true double-click installer via Electron Forge / electron-builder. Bundles Node, the server, and the database engine so the owner installs nothing else.                                                                                                                                                                                                                                                                                                                                                               |
+| **Backend runtime**       | **Node.js (LTS)** + **TypeScript**                                                                                       | One language across front and back. TypeScript catches errors before runtime — important for a strict-quality build.                                                                                                                                                                                                                                                                                                                                                                                                              |
+| **API framework**         | **Fastify** (or NestJS if we want more structure)                                                                        | Fast, well-typed, great validation story. NestJS is worth considering because its module/guard system maps cleanly onto our role-based access control and future multi-tenancy. **Recommendation: NestJS** for the structure it enforces on a large, long-lived app.                                                                                                                                                                                                                                                              |
+| **Database**              | **PostgreSQL** (bundled portable build for the local `.exe`; managed instance for SaaS)                                  | The owner asked about SQL "or something better." Postgres is the right answer: rock-solid, handles JSON for flexible fields, scales to SaaS unchanged, strong audit/row-level-security features we'll use for multi-tenancy. We bundle a portable Postgres with the installer so the owner needs zero DB setup. _(Alternative for ultra-simple single-file: SQLite. We are NOT using it as the primary because moving from SQLite to Postgres later is exactly the kind of rework we're trying to avoid. Build on Postgres now.)_ |
+| **ORM / DB layer**        | **Prisma**                                                                                                               | Type-safe queries, automatic migrations, readable schema file. Migrations are auditable and reversible — feeds our quality gates.                                                                                                                                                                                                                                                                                                                                                                                                 |
+| **Frontend**              | **React + TypeScript + Vite**                                                                                            | Component reuse, huge ecosystem, easy responsive design. Vite is fast and simple.                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| **Styling**               | **Tailwind CSS** + CSS variables for theming                                                                             | The white-label theme tokens become CSS variables driven by a per-deployment theme config. Matches how the prototype already themes with `--gold`, `--darkbg`, etc.                                                                                                                                                                                                                                                                                                                                                               |
+| **Auth**                  | **Lucia** or **Auth.js**, session-based, with **argon2** password hashing and a separate PIN flow                        | Session cookies (not long-lived JWTs) are safer for a browser app on a LAN. PIN login is a second credential type on the same user.                                                                                                                                                                                                                                                                                                                                                                                               |
+| **File storage**          | **Local filesystem** (in the app data dir) behind an abstraction layer, with an **S3-compatible adapter** ready for SaaS | The abstraction means local-disk now, cloud object storage later, no code rewrite.                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| **PDF generation**        | **Playwright** (render an HTML template to PDF) or **pdf-lib**                                                           | Quotes and invoices render as branded PDFs. Playwright gives pixel-perfect HTML-to-PDF using the same theme.                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| **Email**                 | **Nodemailer**, SMTP configured by Super Admin                                                                           | Owner sets their email provider in settings. Works with Gmail/Office365/etc.                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| **Background jobs**       | **node-cron** (in-process) for v1; **BullMQ + Redis** if volume grows                                                    | Overdue-job checks, nightly backups, low-stock scans run on a schedule.                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| **Testing**               | **Vitest** (unit), **Supertest** (API), **Playwright** (end-to-end)                                                      | Covers the strict-gate requirement across all layers.                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| **CI/CD**                 | **GitHub Actions**                                                                                                       | Runs lint + typecheck + tests + build on every PR. Blocks merge on failure.                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 
 ### 3.2 Why not simpler?
-A beginner might wonder why this isn't just "one HTML file forever." The prototype proves the *idea*; it can't enforce security, multi-user data integrity, audit logging, backups, or resale. Those are exactly the things that bite later. We invest in the real stack now so Phase work is additive, never a rewrite.
+
+A beginner might wonder why this isn't just "one HTML file forever." The prototype proves the _idea_; it can't enforce security, multi-user data integrity, audit logging, backups, or resale. Those are exactly the things that bite later. We invest in the real stack now so Phase work is additive, never a rewrite.
 
 ---
 
@@ -106,6 +109,7 @@ Implement as a **permissions matrix**, not hardcoded role checks scattered in co
 **Enforce on the server, always.** The UI hides what a user can't do, but the API must independently reject unauthorized actions. Never trust the client. Every endpoint checks permission server-side.
 
 ### 4.2 Authentication
+
 - Passwords hashed with **argon2id** (never plaintext, never MD5/SHA alone).
 - **Super Admin sets the operator login mode** (system setting): `PASSWORD` or `PIN`. A user can have both a password and a numeric PIN; the active mode governs the shop-floor login screen.
 - Sessions: HTTP-only, Secure, SameSite cookies. Reasonable idle timeout (configurable).
@@ -113,16 +117,19 @@ Implement as a **permissions matrix**, not hardcoded role checks scattered in co
 - First-run wizard creates the Super Admin; no default credentials ship in the build.
 
 ### 4.3 Multi-tenancy readiness (build now, even single-tenant)
+
 - Every domain table carries a `tenant_id` (a.k.a. `company_id`) from day one, even though Hess is the only tenant in a given install.
 - Wrap all queries so they're automatically scoped to the current tenant (Prisma middleware or Postgres Row-Level Security). This is the single most important "don't make it hard to sell later" decision.
 - Theme/branding, settings, and users all hang off the tenant.
 
 ### 4.4 Audit log
+
 - A dedicated `audit_log` table: `who, when, action, entity_type, entity_id, old_value (JSON), new_value (JSON), ip`.
 - Write to it from a central service on every create/update/delete of business data (jobs, costs, customers, users, settings, invoices).
 - Immutable: append-only, never updated or deleted through the app.
 
 ### 4.5 General hardening
+
 - Validate and sanitize **all** input server-side (Zod schemas on every endpoint).
 - Parameterized queries only (Prisma handles this).
 - File uploads: validate type + size, store outside web root, generate safe filenames, scan extension/MIME, never execute.
@@ -203,7 +210,9 @@ SystemSetting     id, tenantId, key, value(JSON)
 Each phase = a branch → PR → all checks green → merge → tag. Do not start a phase until the previous one is merged and tagged. Use **conventional commits** and a PR template with the DoD checklist.
 
 ### Multi-agent approach
+
 Run distinct "agent roles" (you can use separate Claude Code sessions or clearly-scoped task runs):
+
 - **Architect agent** — sets up scaffolding, schema, CI, conventions. (Phase 0–1)
 - **Backend agent** — API endpoints, services, permissions, audit. (Phases 2–7)
 - **Frontend agent** — React UI matching the prototype. (Phases 2–7, after each backend slice)
@@ -215,9 +224,11 @@ The QA agent must approve every PR. No self-merge without QA-agent sign-off.
 ---
 
 ### Phase 0 — Foundations & guardrails
+
 **Goal:** A repo a beginner can run, with the quality machine already enforcing standards on an empty app.
 
 **Tasks**
+
 1. Initialize Git repo + GitHub remote. Set up branch protection on `main` (require PR, require checks).
 2. Scaffold the monorepo: `/server` (NestJS), `/web` (React+Vite), `/desktop` (Electron), `/packages/shared` (types).
 3. Configure TypeScript (strict mode), ESLint, Prettier across all packages.
@@ -227,6 +238,7 @@ The QA agent must approve every PR. No self-merge without QA-agent sign-off.
 7. Write a top-level `README` with copy-paste setup steps for a beginner.
 
 **Quality gate / DoD**
+
 - [ ] `main` is protected; a failing check blocks merge (prove it with a deliberately failing test, then fix).
 - [ ] `npm run dev` brings up an empty but running app on all three surfaces.
 - [ ] CI is green on an empty "hello world" endpoint + component.
@@ -235,9 +247,11 @@ The QA agent must approve every PR. No self-merge without QA-agent sign-off.
 ---
 
 ### Phase 1 — Data layer, tenancy, and security spine
+
 **Goal:** The schema, multi-tenant scoping, RBAC skeleton, and audit logging exist before any feature uses them.
 
 **Tasks**
+
 1. Implement the full Prisma schema from §5 (all tables, `tenantId` everywhere, enums).
 2. Seed script: one Tenant (Hess), one Super Admin (created via wizard later; seed a dev one), sample data mirroring the prototype.
 3. Tenant-scoping middleware (Prisma extension or Postgres RLS). Write a test proving cross-tenant data is invisible.
@@ -246,6 +260,7 @@ The QA agent must approve every PR. No self-merge without QA-agent sign-off.
 6. Auth foundation: argon2 hashing, session management, login/logout endpoints, rate limiting.
 
 **Quality gate / DoD**
+
 - [ ] Cross-tenant isolation test passes (Tenant A cannot read Tenant B).
 - [ ] Permission matrix tests cover all roles; unauthorized calls return 403.
 - [ ] Audit entries written and verified for a sample mutation.
@@ -255,9 +270,11 @@ The QA agent must approve every PR. No self-merge without QA-agent sign-off.
 ---
 
 ### Phase 2 — Auth UI, first-run wizard, user management
+
 **Goal:** Owner can install-equivalent (run the wizard), create the Super Admin, and manage users with role assignment + the auth-mode toggle.
 
 **Tasks**
+
 1. First-run setup wizard (2–3 screens): organization name, Super Admin account, data folder/port. (Web flow now; Electron wraps it in Phase 8.)
 2. Login screen supporting both PASSWORD and PIN modes; honor the system setting.
 3. Super Admin user-management UI: create/edit/deactivate users, set roles, set PIN/password.
@@ -265,6 +282,7 @@ The QA agent must approve every PR. No self-merge without QA-agent sign-off.
 5. Apply white-label theme tokens from tenant config (CSS variables; Hess gold/black default).
 
 **Quality gate / DoD**
+
 - [ ] E2E test: fresh install → wizard → Super Admin login → create an Operator.
 - [ ] Switching auth mode changes the operator login screen (tested).
 - [ ] Operator cannot reach user-management endpoints (403, tested).
@@ -273,9 +291,11 @@ The QA agent must approve every PR. No self-merge without QA-agent sign-off.
 ---
 
 ### Phase 3 — Jobs, Job Board (drag & drop), Job List
+
 **Goal:** Core job tracking matching the prototype, server-backed, permission-aware.
 
 **Tasks**
+
 1. Job CRUD endpoints (Admin+ to write; Operator read + department-move only).
 2. Job Board: 10 department columns, oldest-on-top sort, due-date urgency colors, **drag-and-drop** to move departments (writes to server, audit-logged).
 3. Job List spreadsheet view: search, filters, inline department change, progress.
@@ -283,6 +303,7 @@ The QA agent must approve every PR. No self-merge without QA-agent sign-off.
 5. Responsive layout verified on tablet width.
 
 **Quality gate / DoD**
+
 - [ ] Drag-and-drop persists and audit-logs the move; reload reflects it.
 - [ ] Operator can move department but cannot edit/create/delete (tested both UI + API).
 - [ ] Sorting and urgency-color logic unit-tested against fixed dates.
@@ -291,15 +312,18 @@ The QA agent must approve every PR. No self-merge without QA-agent sign-off.
 ---
 
 ### Phase 4 — Job Traveler (role-gated) + file uploads
+
 **Goal:** The traveler with strict operator/admin field gating and real file storage.
 
 **Tasks**
+
 1. Traveler view: read-only job info; admin-editable production data (incl. **Quoted Material Cost/Part** and **Actual Material Cost/Part**), cert checkbox, tool list (1–20), shop location.
 2. **Operator can only edit Operator Notes** and clock in/out — enforced server-side.
 3. File upload service (blueprints/PDF, setup & job photos) via the storage abstraction; thumbnails for images; size/type validation.
 4. File list + download/preview in the traveler.
 
 **Quality gate / DoD**
+
 - [ ] API rejects operator writes to any field except operatorNotes (tested).
 - [ ] Upload validates type/size; malicious filename neutralized (tested).
 - [ ] Files persist, download intact, and are tenant-scoped.
@@ -308,15 +332,18 @@ The QA agent must approve every PR. No self-merge without QA-agent sign-off.
 ---
 
 ### Phase 5 — Quoting module + PDF
+
 **Goal:** Admin-only quoting workflow producing a branded PDF.
 
 **Tasks**
+
 1. Quote builder: labor rate × est run time + material cost + markup% → calculated price.
 2. Quote statuses (Draft/Sent/Accepted/Rejected); accepting can spawn/link a Job.
 3. Branded PDF generation (theme-aware) for the quote.
 4. **Admin+ visibility only**, enforced server-side and hidden in Operator UI.
 
 **Quality gate / DoD**
+
 - [ ] Price calculation unit-tested with multiple scenarios (rounding correct).
 - [ ] Operator cannot list/read/create quotes (403 tested).
 - [ ] PDF renders with correct branding and figures (snapshot/E2E).
@@ -324,15 +351,18 @@ The QA agent must approve every PR. No self-merge without QA-agent sign-off.
 ---
 
 ### Phase 6 — Inventory + Time tracking
+
 **Goal:** Inventory management with movement logging, and both time-tracking modes.
 
 **Tasks**
+
 1. Inventory CRUD (Admin+ write), stock-level bars, reorder status.
 2. Stock adjustments → `StockMovement` + audit; low-stock detection feeds notifications.
 3. **Per-job time tracking** (clock on/off a specific job) and **daily clock in/out** per operator.
 4. Time reports per job and per user (foundation for payroll export later).
 
 **Quality gate / DoD**
+
 - [ ] Stock math correct; movements logged and audited.
 - [ ] Both time modes record accurate durations (tested across edge cases: midnight, missing clock-out).
 - [ ] Low-stock crossing triggers a notification (tested).
@@ -340,15 +370,18 @@ The QA agent must approve every PR. No self-merge without QA-agent sign-off.
 ---
 
 ### Phase 7 — Invoicing, Reporting, Notifications (email)
+
 **Goal:** Money-out, insight, and alerts.
 
 **Tasks**
+
 1. Invoicing module (build our own): line items, totals/tax, statuses, branded PDF, mark-paid.
 2. Reporting: revenue per customer, job profitability (quoted vs actual material + labor), on-time %.
 3. Email notifications via Super-Admin-configured SMTP: overdue jobs, low stock, (extensible).
 4. Scheduled jobs (node-cron): nightly overdue scan, low-stock scan.
 
 **Quality gate / DoD**
+
 - [ ] Invoice math + tax tested; PDF correct; mark-paid audited.
 - [ ] Reports reconcile against seeded data (deterministic test fixtures).
 - [ ] Email sends in a test harness (mock SMTP); failures handled gracefully.
@@ -356,9 +389,11 @@ The QA agent must approve every PR. No self-merge without QA-agent sign-off.
 ---
 
 ### Phase 8 — Windows packaging, backups, install wizard
+
 **Goal:** A double-clickable Windows installer the owner runs with a short wizard.
 
 **Tasks**
+
 1. Electron wrapper bundling the server + portable Postgres + web build.
 2. Installer via electron-builder (NSIS): 2–3 screen wizard (folder, Super Admin, port/data location).
 3. **Backups (Super Admin configurable):** local folder, external drive/NAS, cloud (OneDrive/Google Drive/Dropbox). Scheduled + on-demand; backs up DB **and** uploaded files; test a restore.
@@ -366,6 +401,7 @@ The QA agent must approve every PR. No self-merge without QA-agent sign-off.
 5. Signed build (code-signing cert) to reduce Windows SmartScreen warnings — note this needs a cert the owner purchases; document it.
 
 **Quality gate / DoD**
+
 - [ ] Clean Windows VM: install → wizard → app runs in browser, no extra installs.
 - [ ] Backup runs to each configured target; **restore verified** on a fresh install.
 - [ ] Uninstall is clean; data folder behavior documented.
@@ -373,19 +409,23 @@ The QA agent must approve every PR. No self-merge without QA-agent sign-off.
 ---
 
 ### Phase 9 — Remote access (later milestone)
+
 **Goal:** Securely reach the shop server from outside the LAN.
 
 **Tasks (defer until owner is ready)**
+
 1. HTTPS/TLS, reverse proxy, hardened session/cookie config for WAN.
 2. Choose approach: secure tunnel (e.g. Tailscale/Cloudflare Tunnel — easiest for a beginner) vs port-forward + dynamic DNS.
 3. Optional 2FA for Admin+ when exposed to the internet.
 
 **Quality gate / DoD**
+
 - [ ] Pen-test checklist passed; no plaintext transport; brute-force protections verified.
 
 ---
 
 ## 7. SaaS evolution path (keep in view, don't build yet)
+
 - **Tenancy is already in the schema**, so the leap to hosted multi-tenant is mostly infrastructure, not rewrite.
 - White-label theming already per-tenant.
 - File storage abstraction swaps local disk → S3-compatible object storage.
@@ -395,6 +435,7 @@ The QA agent must approve every PR. No self-merge without QA-agent sign-off.
 ---
 
 ## 8. Conventions & quality standards (apply throughout)
+
 - **Branches:** `phase-N/short-description`. PR into `main`. Squash-merge.
 - **Commits:** Conventional Commits (`feat:`, `fix:`, `test:`, `chore:`…).
 - **Every PR:** lint + typecheck + unit + API + relevant E2E all green; QA-agent review; DoD checklist ticked.
@@ -412,9 +453,10 @@ The QA agent must approve every PR. No self-merge without QA-agent sign-off.
 ---
 
 ## 10. Open items for the owner to provide when asked
+
 - A code-signing certificate (Phase 8) to avoid Windows security warnings — Claude Code will explain how/where to get one when we reach packaging.
 - SMTP email account details (Phase 7) for sending alerts.
 - The high-resolution Hess Solutions logo file (the prototype embeds a web-sized copy).
 - Decisions on cloud backup provider account (Phase 8).
 
-*End of handoff.*
+_End of handoff._

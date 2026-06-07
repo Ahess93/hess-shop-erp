@@ -1,0 +1,19 @@
+{
+  "name": "@hess-erp/desktop",
+  "version": "0.0.1",
+  "private": true,
+  "main": "dist/main.js",
+  "scripts": {
+    "dev": "tsc && electron .",
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "test": "echo \"No desktop tests yet\" && exit 0"
+  },
+  "dependencies": {
+    "electron": "^42.3.3"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.4.5"
+  }
+}
