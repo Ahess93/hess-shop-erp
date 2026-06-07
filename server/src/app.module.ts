@@ -11,6 +11,8 @@ import { CustomersModule } from './customers/customers.module';
 import { TravelerModule } from './traveler/traveler.module';
 import { FilesModule } from './files/files.module';
 import { QuotesModule } from './quotes/quotes.module';
+import { InventoryModule } from './inventory/inventory.module';
+import { TimeModule } from './time/time.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 
@@ -29,6 +31,8 @@ import { AppService } from './app.service';
     TravelerModule,
     FilesModule,
     QuotesModule,
+    InventoryModule,
+    TimeModule,
   ],
   controllers: [AppController],
   providers: [AppService],
