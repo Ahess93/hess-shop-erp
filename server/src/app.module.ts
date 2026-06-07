@@ -17,6 +17,7 @@ import { InvoicesModule } from './invoices/invoices.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { ReportsModule } from './reports/reports.module';
 import { SchedulerModule } from './scheduler/scheduler.module';
+import { BackupModule } from './backup/backup.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 
@@ -41,6 +42,7 @@ import { AppService } from './app.service';
     NotificationsModule,
     ReportsModule,
     SchedulerModule,
+    BackupModule,
   ],
   controllers: [AppController],
   providers: [AppService],
