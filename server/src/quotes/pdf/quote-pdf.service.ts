@@ -327,10 +327,7 @@ export class QuotePdfService {
 
     if (!fs.existsSync(outputDir)) fs.mkdirSync(outputDir, { recursive: true });
 
-    await ReactPDF.renderToFile(
-      QuoteDocument(quote) as unknown as React.ReactElement,
-      outputPath,
-    );
+    await ReactPDF.renderToFile(QuoteDocument(quote), outputPath);
 
     return outputPath;
   }

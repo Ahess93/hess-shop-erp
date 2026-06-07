@@ -47,13 +47,13 @@ export class NotificationsService {
     }
 
     return {
-      host: String(value.host),
+      host: value.host as string,
       port: Number(value.port),
       secure: Boolean(value.secure ?? false),
-      user: String(value.user),
-      pass: String(value.pass),
-      fromName: String(value.fromName ?? 'Shop ERP'),
-      fromEmail: String(value.fromEmail),
+      user: value.user as string,
+      pass: value.pass as string,
+      fromName: (value.fromName as string | undefined) ?? 'Shop ERP',
+      fromEmail: value.fromEmail as string,
     };
   }
 
@@ -162,7 +162,7 @@ export class NotificationsService {
       where: {
         tenantId,
         role: { in: ['SUPER_ADMIN', 'ADMIN'] },
-        isActive: true,
+        active: true,
       },
       select: { email: true, name: true },
     });
@@ -239,7 +239,7 @@ export class NotificationsService {
       where: {
         tenantId,
         role: { in: ['SUPER_ADMIN', 'ADMIN'] },
-        isActive: true,
+        active: true,
       },
       select: { email: true },
     });

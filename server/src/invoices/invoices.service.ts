@@ -199,7 +199,7 @@ export class InvoicesService {
 
     const updated = await this.prisma.invoice.update({
       where: { id },
-      data,
+      data: data as Parameters<typeof this.prisma.invoice.update>[0]['data'],
       select: INVOICE_SELECT,
     });
 
@@ -209,7 +209,7 @@ export class InvoicesService {
       action: 'invoice:update',
       entityType: 'Invoice',
       entityId: id,
-      oldValue: { status: existing.status } as Record<string, unknown>,
+      oldValue: { status: existing.status },
       newValue: dto as Record<string, unknown>,
     });
 
@@ -233,10 +233,7 @@ export class InvoicesService {
       action: 'invoice:delete',
       entityType: 'Invoice',
       entityId: id,
-      oldValue: { invoiceNumber: existing.invoiceNumber } as Record<
-        string,
-        unknown
-      >,
+      oldValue: { invoiceNumber: existing.invoiceNumber },
     });
   }
 

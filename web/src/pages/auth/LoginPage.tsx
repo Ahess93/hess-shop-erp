@@ -2,17 +2,21 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
 import { login, loginPin } from '../../api/auth';
+import { authTwoFaApi } from '../../api/twofa';
 import { useAuthStore } from '../../store/auth';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 
 type Mode = 'password' | 'pin';
+type Stage = 'credentials' | 'twofa';
 
 export function LoginPage() {
   const [mode, setMode] = useState<Mode>('password');
+  const [stage, setStage] = useState<Stage>('credentials');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [pin, setPin] = useState('');
+  const [twoFaCode, setTwoFaCode] = useState('');
   const [error, setError] = useState('');
 
   const { setUser } = useAuthStore();
@@ -20,9 +24,14 @@ export function LoginPage() {
 
   const passwordMutation = useMutation({
     mutationFn: () => login(email, password),
-    onSuccess: (user) => {
-      setUser(user);
-      void navigate('/jobs');
+    onSuccess: (result) => {
+      if ('requiresTwoFa' in result && result.requiresTwoFa) {
+        setStage('twofa');
+        setError('');
+      } else if ('user' in result) {
+        setUser(result.user as Parameters<typeof setUser>[0]);
+        void navigate('/jobs');
+      }
     },
     onError: (err: Error) => setError(err.message),
   });
@@ -31,6 +40,15 @@ export function LoginPage() {
     mutationFn: () => loginPin(pin),
     onSuccess: (user) => {
       setUser(user);
+      void navigate('/jobs');
+    },
+    onError: (err: Error) => setError(err.message),
+  });
+
+  const twoFaMutation = useMutation({
+    mutationFn: () => authTwoFaApi.complete(twoFaCode),
+    onSuccess: (result) => {
+      setUser(result.user as Parameters<typeof setUser>[0]);
       void navigate('/jobs');
     },
     onError: (err: Error) => setError(err.message),
@@ -48,6 +66,12 @@ export function LoginPage() {
     pinMutation.mutate();
   }
 
+  function handleTwoFaSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError('');
+    twoFaMutation.mutate();
+  }
+
   // PIN pad digit press
   function pressDigit(digit: string) {
     if (pin.length < 6) setPin((p) => p + digit);
@@ -58,7 +82,65 @@ export function LoginPage() {
     setError('');
   }
 
-  const isPending = passwordMutation.isPending || pinMutation.isPending;
+  const isPending = passwordMutation.isPending || pinMutation.isPending || twoFaMutation.isPending;
+
+  // ── 2FA step ──────────────────────────────────────────────────────────────
+
+  if (stage === 'twofa') {
+    return (
+      <div className="min-h-screen bg-[var(--bg)] flex items-center justify-center p-6">
+        <div className="w-full max-w-sm">
+          <div className="text-center mb-8">
+            <div className="text-[var(--gold)] font-bold text-3xl">Hess Solutions</div>
+            <div className="text-[var(--text-muted)] text-sm mt-1">Shop ERP</div>
+          </div>
+          <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-6">
+            <div className="text-center mb-6">
+              <div className="text-4xl mb-3">🛡️</div>
+              <h2 className="font-bold text-[var(--text)] text-lg">Two-Factor Auth</h2>
+              <p className="text-sm text-[var(--text-muted)] mt-1">
+                Enter the 6-digit code from your authenticator app
+              </p>
+            </div>
+            <form onSubmit={handleTwoFaSubmit} className="space-y-4">
+              <input
+                type="text"
+                inputMode="numeric"
+                maxLength={6}
+                value={twoFaCode}
+                onChange={(e) => setTwoFaCode(e.target.value.replace(/\D/g, ''))}
+                placeholder="000000"
+                autoFocus
+                className="w-full text-center text-3xl font-mono tracking-widest bg-[var(--surface-2)] border border-[var(--border)] rounded-lg px-4 py-3 text-[var(--text)] focus:outline-none focus:border-[var(--gold)]"
+              />
+              {error && <p className="text-sm text-[var(--danger)] text-center">{error}</p>}
+              <Button
+                type="submit"
+                loading={isPending}
+                className="w-full"
+                disabled={twoFaCode.length !== 6}
+              >
+                Verify
+              </Button>
+              <button
+                type="button"
+                onClick={() => {
+                  setStage('credentials');
+                  setTwoFaCode('');
+                  setError('');
+                }}
+                className="w-full text-sm text-[var(--text-muted)] hover:text-[var(--text)] transition-colors"
+              >
+                ← Back to login
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Credentials step ──────────────────────────────────────────────────────
 
   return (
     <div className="min-h-screen bg-[var(--bg)] flex items-center justify-center p-6">

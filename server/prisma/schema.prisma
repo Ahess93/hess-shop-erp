@@ -102,6 +102,8 @@ model User {
   role         Role
   active       Boolean   @default(true)
   lastLoginAt  DateTime?
+  totpSecret   String?   // TOTP secret (encrypted at rest — null = 2FA not set up)
+  totpEnabled  Boolean   @default(false) // true = 2FA enforced at login
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 

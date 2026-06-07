@@ -340,10 +340,7 @@ export class InvoicePdfService {
     const outputPath = path.join(outputDir, fileName);
     if (!fs.existsSync(outputDir)) fs.mkdirSync(outputDir, { recursive: true });
 
-    await ReactPDF.renderToFile(
-      InvoiceDocument(invoice) as unknown as React.ReactElement,
-      outputPath,
-    );
+    await ReactPDF.renderToFile(InvoiceDocument(invoice), outputPath);
     return outputPath;
   }
 }

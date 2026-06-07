@@ -8,14 +8,22 @@ export interface SessionUser {
   role: 'SUPER_ADMIN' | 'ADMIN' | 'OPERATOR';
 }
 
-export async function login(email: string, password: string): Promise<SessionUser> {
+export type LoginResult =
+  | { user: SessionUser; requiresTwoFa?: never }
+  | { requiresTwoFa: true; user?: never };
+
+export async function login(email: string, password: string): Promise<LoginResult> {
   const tenantId = localStorage.getItem('tenantId') ?? '';
-  const res = await api.post<{ user: SessionUser }>('/auth/login', {
+  const res = await api.post<{ user?: SessionUser; requiresTwoFa?: boolean }>('/auth/login', {
     tenantId,
     email,
     password,
   });
-  return res.user;
+
+  if (res.requiresTwoFa) {
+    return { requiresTwoFa: true };
+  }
+  return { user: res.user! };
 }
 
 export async function loginPin(pin: string): Promise<SessionUser> {

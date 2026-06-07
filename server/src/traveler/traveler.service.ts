@@ -206,7 +206,7 @@ export class TravelerService {
       action: 'traveler:update-all',
       entityType: 'TravelerTool',
       entityId: toolId,
-      oldValue: { description: tool.description } as Record<string, unknown>,
+      oldValue: { description: tool.description },
     });
   }
 }
