@@ -8,7 +8,7 @@ import {
   HttpStatus,
   UnauthorizedException,
 } from '@nestjs/common';
-import { Request, Response } from 'express';
+import type { Request, Response } from 'express';
 import { z } from 'zod';
 import { AuthService } from './auth.service';
 import { Throttle } from '@nestjs/throttler';
