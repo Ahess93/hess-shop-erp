@@ -11,6 +11,7 @@ import { UsersPage } from './pages/users/UsersPage';
 import { SettingsPage } from './pages/settings/SettingsPage';
 import { JobBoardPage } from './pages/jobs/JobBoardPage';
 import { TravelerPage } from './pages/traveler/TravelerPage';
+import { QuotesPage } from './pages/quotes/QuotesPage';
 import { Spinner } from './components/ui/Spinner';
 
 const queryClient = new QueryClient({
@@ -61,6 +62,14 @@ function AppRoutes() {
         <Route index element={<Navigate to="/jobs" replace />} />
         <Route path="jobs" element={<JobBoardPage />} />
         <Route path="jobs/:jobId/traveler" element={<TravelerPage />} />
+        <Route
+          path="quotes"
+          element={
+            <ProtectedRoute requiredRoles={['SUPER_ADMIN', 'ADMIN']}>
+              <QuotesPage />
+            </ProtectedRoute>
+          }
+        />
         <Route
           path="users"
           element={

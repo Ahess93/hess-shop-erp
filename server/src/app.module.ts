@@ -10,6 +10,7 @@ import { JobsModule } from './jobs/jobs.module';
 import { CustomersModule } from './customers/customers.module';
 import { TravelerModule } from './traveler/traveler.module';
 import { FilesModule } from './files/files.module';
+import { QuotesModule } from './quotes/quotes.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 
@@ -27,6 +28,7 @@ import { AppService } from './app.service';
     CustomersModule,
     TravelerModule,
     FilesModule,
+    QuotesModule,
   ],
   controllers: [AppController],
   providers: [AppService],
