@@ -191,7 +191,7 @@ export class AuthService {
       tenantId: user.tenantId,
       name: user.name,
       email: user.email,
-      role: 'SUPER_ADMIN',
+      role: Role.SUPER_ADMIN,
     };
   }
 }
