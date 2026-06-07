@@ -13,6 +13,10 @@ import { FilesModule } from './files/files.module';
 import { QuotesModule } from './quotes/quotes.module';
 import { InventoryModule } from './inventory/inventory.module';
 import { TimeModule } from './time/time.module';
+import { InvoicesModule } from './invoices/invoices.module';
+import { NotificationsModule } from './notifications/notifications.module';
+import { ReportsModule } from './reports/reports.module';
+import { SchedulerModule } from './scheduler/scheduler.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 
@@ -33,6 +37,10 @@ import { AppService } from './app.service';
     QuotesModule,
     InventoryModule,
     TimeModule,
+    InvoicesModule,
+    NotificationsModule,
+    ReportsModule,
+    SchedulerModule,
   ],
   controllers: [AppController],
   providers: [AppService],

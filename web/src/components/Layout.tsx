@@ -14,7 +14,9 @@ const NAV_ITEMS: NavItem[] = [
   { to: '/jobs', label: 'Job Board', icon: '🏭' },
   { to: '/time', label: 'Time', icon: '⏱️' },
   { to: '/quotes', label: 'Quotes', icon: '📋', roles: ['SUPER_ADMIN', 'ADMIN'] },
+  { to: '/invoices', label: 'Invoices', icon: '🧾', roles: ['SUPER_ADMIN', 'ADMIN'] },
   { to: '/inventory', label: 'Inventory', icon: '📦', roles: ['SUPER_ADMIN', 'ADMIN'] },
+  { to: '/reports', label: 'Reports', icon: '📊', roles: ['SUPER_ADMIN', 'ADMIN'] },
   { to: '/users', label: 'Users', icon: '👥', roles: ['SUPER_ADMIN', 'ADMIN'] },
   { to: '/settings', label: 'Settings', icon: '⚙️', roles: ['SUPER_ADMIN'] },
 ];
