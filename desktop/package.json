@@ -1,19 +1,86 @@
 {
   "name": "@hess-erp/desktop",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "private": true,
   "main": "dist/main.js",
   "scripts": {
     "dev": "tsc && electron .",
     "build": "tsc",
     "typecheck": "tsc --noEmit",
-    "test": "echo \"No desktop tests yet\" && exit 0"
+    "test": "echo \"No desktop unit tests — Electron lifecycle tested manually\" && exit 0",
+    "dist": "npm run build && electron-builder --win --publish never",
+    "dist:ci": "npm run build && electron-builder --win --publish never --config.win.sign=false"
+  },
+  "build": {
+    "appId": "com.hesssolutions.shop-erp",
+    "productName": "Hess Solutions Shop ERP",
+    "copyright": "Copyright © 2025 Hess Solutions",
+    "directories": {
+      "output": "release",
+      "buildResources": "assets"
+    },
+    "files": [
+      "dist/**/*",
+      "assets/**/*"
+    ],
+    "extraResources": [
+      {
+        "from": "../server/dist",
+        "to": "server/dist",
+        "filter": ["**/*"]
+      },
+      {
+        "from": "../server/node_modules",
+        "to": "server/node_modules",
+        "filter": ["**/*"]
+      },
+      {
+        "from": "../server/prisma",
+        "to": "server/prisma",
+        "filter": ["**/*"]
+      }
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        },
+        {
+          "target": "portable",
+          "arch": ["x64"]
+        }
+      ],
+      "icon": "assets/icon.ico",
+      "requestedExecutionLevel": "asInvoker"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "allowElevation": true,
+      "installerIcon": "assets/icon.ico",
+      "uninstallerIcon": "assets/icon.ico",
+      "installerHeaderIcon": "assets/icon.ico",
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Hess Shop ERP",
+      "runAfterFinish": true,
+      "include": "installer.nsh"
+    },
+    "publish": {
+      "provider": "github",
+      "owner": "Ahess93",
+      "repo": "hess-shop-erp"
+    }
   },
   "dependencies": {
-    "electron": "^42.3.3"
+    "electron": "^42.3.3",
+    "electron-log": "^5.4.4",
+    "electron-updater": "^6.8.9"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
+    "electron-builder": "^26.15.0",
     "typescript": "^5.4.5"
   }
 }

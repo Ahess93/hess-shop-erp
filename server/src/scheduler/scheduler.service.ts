@@ -3,6 +3,7 @@ import * as cron from 'node-cron';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { InvoicesService } from '../invoices/invoices.service';
+import { BackupService } from '../backup/backup.service';
 
 @Injectable()
 export class SchedulerService implements OnModuleInit {
@@ -12,10 +13,11 @@ export class SchedulerService implements OnModuleInit {
     private readonly prisma: PrismaService,
     private readonly notifications: NotificationsService,
     private readonly invoices: InvoicesService,
+    private readonly backup: BackupService,
   ) {}
 
   onModuleInit() {
-    // Nightly at 01:00 — mark overdue invoices + send alerts
+    // Nightly at 01:00 — mark overdue invoices + send alerts + backup
     cron.schedule('0 1 * * *', () => {
       void this.runNightlyScan();
     });
@@ -60,6 +62,21 @@ export class SchedulerService implements OnModuleInit {
 
       // 3. Send low-stock alerts
       await this.notifications.sendLowStockAlerts(tenantId);
+
+      // 4. Auto backup (only if enabled in config)
+      const backupCfg = await this.backup.getConfig(tenantId);
+      if (backupCfg.autoBackup) {
+        try {
+          const result = await this.backup.createSystemBackup(tenantId);
+          this.logger.log(
+            `${tenantName}: auto-backup created — ${result.filename} (${(result.sizeBytes / 1024).toFixed(1)} KB)`,
+          );
+        } catch (err) {
+          this.logger.error(
+            `${tenantName}: auto-backup failed: ${String(err)}`,
+          );
+        }
+      }
     } catch (err) {
       this.logger.error(`Scan failed for tenant ${tenantName}: ${String(err)}`);
     }

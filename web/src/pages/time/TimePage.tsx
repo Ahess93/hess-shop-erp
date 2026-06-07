@@ -291,7 +291,7 @@ function HistoryTab({ entries, isAdmin }: { entries: TimeEntry[]; isAdmin: boole
                 <td className="px-4 py-3 text-[var(--text-muted)] text-xs">{entry.user.name}</td>
               )}
               <td className="px-4 py-3">
-                <Badge variant={entry.type === 'JOB' ? 'gold' : 'default'}>{entry.type}</Badge>
+                <Badge variant={entry.type === 'JOB' ? 'gold' : 'gray'}>{entry.type}</Badge>
               </td>
               <td className="px-4 py-3 font-mono text-xs text-[var(--gold)]">
                 {entry.job?.jobNumber ?? '—'}
