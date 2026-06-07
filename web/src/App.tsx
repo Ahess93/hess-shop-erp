@@ -9,7 +9,7 @@ import { SetupWizard } from './pages/setup/SetupWizard';
 import { LoginPage } from './pages/auth/LoginPage';
 import { UsersPage } from './pages/users/UsersPage';
 import { SettingsPage } from './pages/settings/SettingsPage';
-import { JobsPlaceholder } from './pages/jobs/JobsPlaceholder';
+import { JobBoardPage } from './pages/jobs/JobBoardPage';
 import { Spinner } from './components/ui/Spinner';
 
 const queryClient = new QueryClient({
@@ -58,7 +58,7 @@ function AppRoutes() {
         }
       >
         <Route index element={<Navigate to="/jobs" replace />} />
-        <Route path="jobs" element={<JobsPlaceholder />} />
+        <Route path="jobs" element={<JobBoardPage />} />
         <Route
           path="users"
           element={

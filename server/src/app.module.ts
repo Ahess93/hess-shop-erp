@@ -6,6 +6,8 @@ import { AuditModule } from './audit/audit.module';
 import { AuthModule } from './auth/auth.module';
 import { SetupModule } from './setup/setup.module';
 import { UsersModule } from './users/users.module';
+import { JobsModule } from './jobs/jobs.module';
+import { CustomersModule } from './customers/customers.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 
@@ -19,6 +21,8 @@ import { AppService } from './app.service';
     AuthModule,
     SetupModule,
     UsersModule,
+    JobsModule,
+    CustomersModule,
   ],
   controllers: [AppController],
   providers: [AppService],

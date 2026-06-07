@@ -9,8 +9,9 @@ function jsonResponse(data: unknown, status = 200) {
   return Promise.resolve({
     ok: status >= 200 && status < 300,
     status,
+    headers: { get: (_name: string) => null },
     json: () => Promise.resolve(data),
-  } as Response);
+  } as unknown as Response);
 }
 
 beforeEach(() => {
