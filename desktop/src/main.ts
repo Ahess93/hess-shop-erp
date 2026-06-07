@@ -19,14 +19,12 @@ function createWindow(): void {
   // In development, load the Vite dev server
   // In production, load the built web app served by the backend
   const isDev = process.env['NODE_ENV'] !== 'production';
-  const url = isDev
-    ? `http://localhost:${WEB_PORT}`
-    : `http://localhost:${SERVER_PORT}`;
+  const url = isDev ? `http://localhost:${WEB_PORT}` : `http://localhost:${SERVER_PORT}`;
 
   void win.loadURL(url);
 }
 
-app.whenReady().then(() => {
+void app.whenReady().then(() => {
   createWindow();
 
   app.on('activate', () => {
